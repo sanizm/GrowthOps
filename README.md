@@ -163,7 +163,8 @@ GET /goals/{id}/analytics
 
 Add screenshots here after saving them in a `docs/screenshots` folder.
 
-```md
+`## Screenshots
+
 ### Login
 
 ![Login](docs/screenshots/login.png)
@@ -179,7 +180,6 @@ Add screenshots here after saving them in a `docs/screenshots` folder.
 ### Progress Entries and Pagination
 
 ![Progress Entries](docs/screenshots/progress-entries.png)
-```
 
 ---
 
