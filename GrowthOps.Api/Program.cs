@@ -50,11 +50,15 @@ builder.Services.AddSwaggerGen(options =>
         });
 });
 
+var allowedOrigins =
+    builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+    ?? [];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod().SetPreflightMaxAge(TimeSpan.Zero);
     });
@@ -83,6 +87,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -97,6 +103,7 @@ app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseExceptionHandler();
 
 //Token
 app.MapGet("/me", [Authorize] (HttpContext http) =>
@@ -113,13 +120,13 @@ app.MapGet("/me", [Authorize] (HttpContext http) =>
 
 //Goals
 
-app.MapGet("/goals", [Authorize] async (GoalService service, HttpContext http) =>
+app.MapGet("/goals", [Authorize] async (GoalService service, HttpContext http, CancellationToken cancellationToken) =>
 {
     var userId = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     if (userId is null)
         return Results.Unauthorized();
 
-    var goals = await service.GetAllAsync(int.Parse(userId));
+    var goals = await service.GetAllAsync(int.Parse(userId), cancellationToken);
     return Results.Ok(goals);
 });
 
