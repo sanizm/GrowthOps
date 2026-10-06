@@ -21,7 +21,7 @@ public class GoalService
 
   // public List<GoalDto> GetAll() => _goals;
 
-  public async Task<IReadOnlyList<GoalDto>> GetAllAsync(int userId)
+  public async Task<IReadOnlyList<GoalDto>> GetAllAsync(int userId, CancellationToken cancellationToken)
   {
     return await _db.Goals
     .Where(g => g.UserId == userId)
@@ -39,7 +39,7 @@ public class GoalService
         g.Unit,
         g.IsIncrease
     ))
-    .ToListAsync();
+    .ToListAsync(cancellationToken);
   }
   // public GoalDto? GetById(int id) => _goals.FirstOrDefault(g => g.Id == id);
 
