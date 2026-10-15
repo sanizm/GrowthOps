@@ -10,10 +10,13 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit() {
-    setMessage("");
+    if (isLoading) return;
 
+    setIsLoading(true);
+    setMessage("");
     try {
       if (mode === "signup") {
         await register(email, password);
@@ -30,6 +33,8 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
       onLoginSuccess();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Request failed");
+    } finally {
+      setIsLoading(false);
     }
   }
   return (
@@ -69,17 +74,25 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
           </div>
           <button
             onClick={handleSubmit}
-            className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-white font-medium hover:bg-slate-800"
+            disabled={isLoading}
+            className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-white font-medium hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {mode === "login" ? "Login" : "Create account"}
+            {isLoading
+              ? mode === "login"
+                ? "Logging in..."
+                : "Creating account..."
+              : mode === "login"
+                ? "Login"
+                : "Create account"}
           </button>
           <button
             type="button"
+            disabled={isLoading}
             onClick={() => {
               setMode(mode === "login" ? "signup" : "login");
               setMessage("");
             }}
-            className="w-full text-sm text-slate-600 hover:text-slate-900"
+            className="w-full text-sm text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {mode === "login"
               ? "Need an account? Sign up"
