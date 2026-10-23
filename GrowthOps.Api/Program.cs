@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi;
 using System.Text;
 using System.Security.Claims;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -20,6 +21,7 @@ builder.Services.AddScoped<GoalProgressService>();
 builder.Services.AddScoped<GoalStreakService>();
 builder.Services.AddScoped<GoalAnalyticsService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddOpenTelemetry().UseAzureMonitor();
 
 builder.Services.AddDbContext<GrowthOpsDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("GrowthOpsDb")));
 
@@ -143,7 +145,7 @@ app.MapGet("/goals/{id:int}", [Authorize] async (int id, GoalService service, Ht
     return Results.Ok(goal);
 });
 
-app.MapPost("/goals", [Authorize] async (CreateGoalRequest request, GoalService service, HttpContext http) =>
+app.MapPost("/goals", [Authorize] async (CreateGoalRequest request, GoalService service, HttpContext http, ILogger<Program> logger) =>
 {
     var userIdValue = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     if (userIdValue is null)
@@ -159,6 +161,10 @@ app.MapPost("/goals", [Authorize] async (CreateGoalRequest request, GoalService 
     try
     {
         var goal = await service.CreateAsync(request, int.Parse(userIdValue));
+        logger.LogInformation(
+            "Goal {GoalId} created by user {UserId}",
+            goal.Id,
+            userIdValue);
         return Results.Created($"/goals/{goal.Id}", goal);
     }
     catch (ArgumentException ex)
