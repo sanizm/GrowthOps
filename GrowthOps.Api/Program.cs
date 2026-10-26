@@ -22,6 +22,7 @@ builder.Services.AddScoped<GoalStreakService>();
 builder.Services.AddScoped<GoalAnalyticsService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddOpenTelemetry().UseAzureMonitor();
+builder.Services.AddHealthChecks().AddDbContextCheck<GrowthOpsDbContext>(); ;
 
 builder.Services.AddDbContext<GrowthOpsDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("GrowthOpsDb")));
 
@@ -106,6 +107,7 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseExceptionHandler();
+app.MapHealthChecks("/health");
 
 //Token
 app.MapGet("/me", [Authorize] (HttpContext http) =>
