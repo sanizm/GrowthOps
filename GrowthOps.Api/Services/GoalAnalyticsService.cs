@@ -22,15 +22,15 @@ public class GoalAnalyticsService
     _entryService = entryService;
   }
 
-  public async Task<GoalAnalyticsDto?> GetAsync(int goalId, int userId)
+  public async Task<GoalAnalyticsDto?> GetAsync(int goalId, int userId, CancellationToken cancellationToken)
   {
-    var goal = await _goalService.GetByIdAsync(goalId, userId);
+    var goal = await _goalService.GetByIdAsync(goalId, userId, cancellationToken);
 
     if (goal == null) return null;
 
-    var progress = await _progressService.GetSummaryAsync(goalId, userId);
-    var streak = await _streakService.GetStreakAsync(goalId, userId);
-    var entries = await _entryService.GetForGoalAsync(goalId, userId);
+    var progress = await _progressService.GetSummaryAsync(goalId, userId, cancellationToken);
+    var streak = await _streakService.GetStreakAsync(goalId, userId, cancellationToken);
+    var entries = await _entryService.GetForGoalAsync(goalId, userId, 1, 10, cancellationToken);
 
     if (progress is null || streak is null) return null;
 

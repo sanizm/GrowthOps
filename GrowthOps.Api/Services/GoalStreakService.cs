@@ -12,10 +12,10 @@ public class GoalStreakService
     _db = db;
   }
 
-  public async Task<GoalStreakDto?> GetStreakAsync(int goalId, int userId)
+  public async Task<GoalStreakDto?> GetStreakAsync(int goalId, int userId, CancellationToken cancellationToken)
   {
     var goalExists = await _db.Goals
-        .AnyAsync(g => g.Id == goalId && g.UserId == userId);
+        .AnyAsync(g => g.Id == goalId && g.UserId == userId, cancellationToken);
 
     if (!goalExists)
       return null;
@@ -25,7 +25,7 @@ public class GoalStreakService
         .Select(e => e.LoggedDate)
         .Distinct()
         .OrderBy(d => d)
-        .ToListAsync();
+        .ToListAsync(cancellationToken);
 
     if (dates.Count == 0)
       return new GoalStreakDto(goalId, 0, 0, 0);

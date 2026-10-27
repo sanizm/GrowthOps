@@ -12,9 +12,10 @@ public class GoalProgressService
     _db = db;
   }
 
-  public async Task<GoalProgressSummaryDto?> GetSummaryAsync(int goalId, int userId)
+  public async Task<GoalProgressSummaryDto?> GetSummaryAsync(int goalId, int userId, CancellationToken cancellationToken)
   {
-    var goal = await _db.Goals.FirstOrDefaultAsync(g => g.Id == goalId && g.UserId == userId);
+    var goal = await _db.Goals.FirstOrDefaultAsync(g => g.Id == goalId && g.UserId == userId, cancellationToken
+    );
     if (goal is null) return null;
 
     var now = DateTime.UtcNow;
@@ -30,7 +31,7 @@ public class GoalProgressService
           .Where(e => e.GoalId == goalId && e.Value.HasValue)
           .OrderByDescending(e => e.CreatedAtUtc)
           .Select(e => e.Value)
-          .FirstOrDefaultAsync();
+          .FirstOrDefaultAsync(cancellationToken);
 
       var current = latestValue ?? goal.StartValue;
 

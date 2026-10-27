@@ -20,9 +20,9 @@ public class AuthService
     _hasher = new PasswordHasher<User>();
   }
 
-  public async Task<User> RegisterAsync(string email, string password)
+  public async Task<User> RegisterAsync(string email, string password, CancellationToken cancellationToken)
   {
-    var exists = await _db.Users.AnyAsync(u => u.Email == email);
+    var exists = await _db.Users.AnyAsync(u => u.Email == email, cancellationToken);
     if (exists)
       throw new ArgumentException("Email already exists.");
 
@@ -34,14 +34,14 @@ public class AuthService
     user.PasswordHash = _hasher.HashPassword(user, password);
 
     _db.Users.Add(user);
-    await _db.SaveChangesAsync();
+    await _db.SaveChangesAsync(cancellationToken);
 
     return user;
   }
 
-  public async Task<User?> LoginAsync(string email, string password)
+  public async Task<User?> LoginAsync(string email, string password, CancellationToken cancellationToken)
   {
-    var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+    var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
     if (user is null)
       return null;
 

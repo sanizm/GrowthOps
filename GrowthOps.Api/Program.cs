@@ -134,20 +134,20 @@ app.MapGet("/goals", [Authorize] async (GoalService service, HttpContext http, C
     return Results.Ok(goals);
 });
 
-app.MapGet("/goals/{id:int}", [Authorize] async (int id, GoalService service, HttpContext http) =>
+app.MapGet("/goals/{id:int}", [Authorize] async (int id, GoalService service, HttpContext http, CancellationToken cancellationToken) =>
 {
     var userId = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     if (userId is null)
         return Results.Unauthorized();
 
-    var goal = await service.GetByIdAsync(id, int.Parse(userId));
+    var goal = await service.GetByIdAsync(id, int.Parse(userId), cancellationToken);
     if (goal is null)
         return Results.NotFound(new { error = $"Goal with id {id} not found." });
 
     return Results.Ok(goal);
 });
 
-app.MapPost("/goals", [Authorize] async (CreateGoalRequest request, GoalService service, HttpContext http, ILogger<Program> logger) =>
+app.MapPost("/goals", [Authorize] async (CreateGoalRequest request, GoalService service, HttpContext http, ILogger<Program> logger, CancellationToken cancellationToken) =>
 {
     var userIdValue = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     if (userIdValue is null)
@@ -162,7 +162,7 @@ app.MapPost("/goals", [Authorize] async (CreateGoalRequest request, GoalService 
 
     try
     {
-        var goal = await service.CreateAsync(request, int.Parse(userIdValue));
+        var goal = await service.CreateAsync(request, int.Parse(userIdValue), cancellationToken);
         logger.LogInformation(
             "Goal {GoalId} created by user {UserId}",
             goal.Id,
@@ -175,14 +175,15 @@ app.MapPost("/goals", [Authorize] async (CreateGoalRequest request, GoalService 
     }
 });
 
-app.MapDelete("/goals/{id:int}", async (int id, GoalService service, HttpContext http) =>
+app.MapDelete("/goals/{id:int}", async (int id, GoalService service, HttpContext http, CancellationToken cancellationToken
+) =>
 {
     var userIdValue = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
     if (userIdValue is null)
         return Results.Unauthorized();
 
-    var deleted = await service.DeleteAsync(id, int.Parse(userIdValue));
+    var deleted = await service.DeleteAsync(id, int.Parse(userIdValue), cancellationToken);
 
     return deleted
         ? Results.NoContent()
@@ -195,7 +196,8 @@ app.MapGet("/goals/{id:int}/entries", [Authorize] async (
     int? page,
     int? pageSize,
     ProgressEntryService service,
-    HttpContext http) =>
+    HttpContext http,
+    CancellationToken cancellationToken) =>
 {
     var userIdValue = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -206,7 +208,7 @@ app.MapGet("/goals/{id:int}/entries", [Authorize] async (
         id,
         int.Parse(userIdValue),
         page ?? 1,
-        pageSize ?? 10
+        pageSize ?? 10, cancellationToken
     );
 
     return result is null
@@ -214,14 +216,14 @@ app.MapGet("/goals/{id:int}/entries", [Authorize] async (
         : Results.Ok(result);
 });
 
-app.MapPost("/goals/{id:int}/entries", [Authorize] async (int id, CreateProgressEntryRequest request, ProgressEntryService service, HttpContext http) =>
+app.MapPost("/goals/{id:int}/entries", [Authorize] async (int id, CreateProgressEntryRequest request, ProgressEntryService service, HttpContext http, CancellationToken cancellationToken) =>
 {
     var userIdValue = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     if (userIdValue is null)
         return Results.Unauthorized();
     try
     {
-        var created = await service.CreateAsync(id, request, int.Parse(userIdValue));
+        var created = await service.CreateAsync(id, request, int.Parse(userIdValue), cancellationToken);
 
         return created is null
             ? Results.NotFound(new { error = $"Goal with id {id} not found." })
@@ -234,13 +236,13 @@ app.MapPost("/goals/{id:int}/entries", [Authorize] async (int id, CreateProgress
 });
 
 //Progress Summary
-app.MapGet("/goals/{id:int}/summary", [Authorize] async (int id, GoalProgressService service, HttpContext http) =>
+app.MapGet("/goals/{id:int}/summary", [Authorize] async (int id, GoalProgressService service, HttpContext http, CancellationToken cancellationToken) =>
 {
     var userIdValue = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     if (userIdValue is null)
         return Results.Unauthorized();
 
-    var summary = await service.GetSummaryAsync(id, int.Parse(userIdValue));
+    var summary = await service.GetSummaryAsync(id, int.Parse(userIdValue), cancellationToken);
 
     return summary is null
         ? Results.NotFound(new { error = $"Goal with id {id} not found." })
@@ -248,13 +250,13 @@ app.MapGet("/goals/{id:int}/summary", [Authorize] async (int id, GoalProgressSer
 });
 
 //Streak
-app.MapGet("/goals/{id:int}/streak", [Authorize] async (int id, GoalStreakService service, HttpContext http) =>
+app.MapGet("/goals/{id:int}/streak", [Authorize] async (int id, GoalStreakService service, HttpContext http, CancellationToken cancellationToken) =>
 {
     var userIdValue = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     if (userIdValue is null)
         return Results.Unauthorized();
 
-    var streak = await service.GetStreakAsync(id, int.Parse(userIdValue));
+    var streak = await service.GetStreakAsync(id, int.Parse(userIdValue), cancellationToken);
 
     return streak is null
         ? Results.NotFound(new { error = $"Goal with id {id} not found." })
@@ -262,13 +264,13 @@ app.MapGet("/goals/{id:int}/streak", [Authorize] async (int id, GoalStreakServic
 });
 
 //Analytics
-app.MapGet("/goals/{id:int}/analytics", [Authorize] async (int id, GoalAnalyticsService service, HttpContext http) =>
+app.MapGet("/goals/{id:int}/analytics", [Authorize] async (int id, GoalAnalyticsService service, HttpContext http, CancellationToken cancellationToken) =>
 {
     var userIdValue = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     if (userIdValue is null)
         return Results.Unauthorized();
 
-    var result = await service.GetAsync(id, int.Parse(userIdValue));
+    var result = await service.GetAsync(id, int.Parse(userIdValue), cancellationToken);
 
     return result is null
         ? Results.NotFound(new { error = $"Goal with id {id} not found." })
@@ -276,21 +278,21 @@ app.MapGet("/goals/{id:int}/analytics", [Authorize] async (int id, GoalAnalytics
 });
 
 //Chart
-app.MapGet("/goals/{id:int}/chart", [Authorize] async (int id, ProgressEntryService service, HttpContext http) =>
+app.MapGet("/goals/{id:int}/chart", [Authorize] async (int id, ProgressEntryService service, HttpContext http, CancellationToken cancellationToken) =>
 {
     var userIdValue = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     if (userIdValue is null)
         return Results.Unauthorized();
-    var result = await service.GetChartDataAsync(id, int.Parse(userIdValue));
+    var result = await service.GetChartDataAsync(id, int.Parse(userIdValue), cancellationToken);
     return Results.Ok(result);
 });
 
 //Auth
-app.MapPost("/auth/register", async (RegisterRequest request, AuthService service) =>
+app.MapPost("/auth/register", async (RegisterRequest request, AuthService service, CancellationToken cancellationToken) =>
 {
     try
     {
-        var user = await service.RegisterAsync(request.Email, request.Password);
+        var user = await service.RegisterAsync(request.Email, request.Password, cancellationToken);
 
         return Results.Ok(new
         {
@@ -304,9 +306,9 @@ app.MapPost("/auth/register", async (RegisterRequest request, AuthService servic
     }
 });
 
-app.MapPost("/auth/login", async (LoginRequest request, AuthService service, IConfiguration config) =>
+app.MapPost("/auth/login", async (LoginRequest request, AuthService service, IConfiguration config, CancellationToken cancellationToken) =>
 {
-    var user = await service.LoginAsync(request.Email, request.Password);
+    var user = await service.LoginAsync(request.Email, request.Password, cancellationToken);
 
     if (user is null)
         return Results.Unauthorized();

@@ -18,10 +18,11 @@ public class ProgressEntryService
       int goalId,
       int userId,
       int page = 1,
-      int pageSize = 10)
+      int pageSize = 10,
+      CancellationToken cancellationToken = default)
   {
     var goalExists = await _db.Goals
-        .AnyAsync(g => g.Id == goalId && g.UserId == userId);
+        .AnyAsync(g => g.Id == goalId && g.UserId == userId, cancellationToken);
 
     if (!goalExists)
       return null;
@@ -35,7 +36,7 @@ public class ProgressEntryService
         .ThenByDescending(e => e.CreatedAtUtc)
         .ThenByDescending(e => e.Id);
 
-    var totalCount = await query.CountAsync();
+    var totalCount = await query.CountAsync(cancellationToken);
 
     var entries = await query
         .Skip((page - 1) * pageSize)
@@ -49,7 +50,7 @@ public class ProgressEntryService
             e.CountDelta,
             e.Note
         ))
-        .ToListAsync();
+        .ToListAsync(cancellationToken);
 
     var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
@@ -62,9 +63,9 @@ public class ProgressEntryService
     );
   }
 
-  public async Task<ProgressEntryDto?> CreateAsync(int goalId, CreateProgressEntryRequest request, int userId)
+  public async Task<ProgressEntryDto?> CreateAsync(int goalId, CreateProgressEntryRequest request, int userId, CancellationToken cancellationToken)
   {
-    var goal = await _db.Goals.FirstOrDefaultAsync(g => g.Id == goalId && g.UserId == userId);
+    var goal = await _db.Goals.FirstOrDefaultAsync(g => g.Id == goalId && g.UserId == userId, cancellationToken);
     if (goal is null) return null;
     var loggedDate = request.LoggedDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -78,7 +79,7 @@ public class ProgressEntryService
         pe.LoggedDate == loggedDate &&
         pe.Value == request.Value &&
         pe.CountDelta == request.CountDelta &&
-        pe.Note == request.Note);
+        pe.Note == request.Note, cancellationToken);
 
     if (progressEntryExists)
     {
@@ -123,7 +124,7 @@ public class ProgressEntryService
     };
 
     _db.ProgressEntries.Add(entry);
-    await _db.SaveChangesAsync();
+    await _db.SaveChangesAsync(cancellationToken);
 
     return new ProgressEntryDto(
         entry.Id,
@@ -137,9 +138,9 @@ public class ProgressEntryService
 
   }
 
-  public async Task<IReadOnlyList<GoalChartPointDto>> GetChartDataAsync(int goalId, int userId)
+  public async Task<IReadOnlyList<GoalChartPointDto>> GetChartDataAsync(int goalId, int userId, CancellationToken cancellationToken)
   {
-    var goal = await _db.Goals.FirstOrDefaultAsync(g => g.Id == goalId && g.UserId == userId);
+    var goal = await _db.Goals.FirstOrDefaultAsync(g => g.Id == goalId && g.UserId == userId, cancellationToken);
     if (goal is null) return [];
 
     List<GoalChartPointDto> chart;
@@ -151,7 +152,7 @@ public class ProgressEntryService
     .Where(e => e.GoalId == goalId && e.Value != null)
     .OrderBy(e => e.LoggedDate)
     .ThenBy(e => e.CreatedAtUtc)
-    .ToListAsync();
+    .ToListAsync(cancellationToken);
 
       return entries
           .GroupBy(e => e.LoggedDate)
@@ -174,7 +175,7 @@ public class ProgressEntryService
       var entries = await _db.ProgressEntries
           .Where(e => e.GoalId == goalId && e.CountDelta != null)
           .OrderBy(e => e.CreatedAtUtc)
-          .ToListAsync();
+          .ToListAsync(cancellationToken);
 
       var daily = entries
           .GroupBy(e => e.LoggedDate)

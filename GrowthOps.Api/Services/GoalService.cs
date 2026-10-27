@@ -43,7 +43,7 @@ public class GoalService
   }
   // public GoalDto? GetById(int id) => _goals.FirstOrDefault(g => g.Id == id);
 
-  public async Task<GoalDto?> GetByIdAsync(int id, int userId)
+  public async Task<GoalDto?> GetByIdAsync(int id, int userId, CancellationToken cancellationToken)
   {
     return await _db.Goals
     .Where(g => g.Id == id && g.UserId == userId)
@@ -60,19 +60,19 @@ public class GoalService
         g.Unit,
         g.IsIncrease
     ))
-    .FirstOrDefaultAsync();
+    .FirstOrDefaultAsync(cancellationToken);
   }
 
-  public async Task<bool> DeleteAsync(int id, int userId)
+  public async Task<bool> DeleteAsync(int id, int userId, CancellationToken cancellationToken)
   {
     var goal = await _db.Goals
-        .FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId);
+        .FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId, cancellationToken);
 
     if (goal is null)
       return false;
 
     _db.Goals.Remove(goal);
-    await _db.SaveChangesAsync();
+    await _db.SaveChangesAsync(cancellationToken);
 
     return true;
   }
@@ -84,7 +84,7 @@ public class GoalService
   //   _goals.Add(goal);
   //   return goal;
   // }
-  public async Task<GoalDto> CreateAsync(CreateGoalRequest request, int userId)
+  public async Task<GoalDto> CreateAsync(CreateGoalRequest request, int userId, CancellationToken cancellationToken)
   {
     if (!Enum.TryParse<GoalType>(request.GoalType, ignoreCase: true, out var goalType))
       throw new ArgumentException("Invalid GoalType. Use 'Metric' or 'TaskBased'.");
@@ -107,7 +107,7 @@ public class GoalService
       UserId = userId
     };
     _db.Goals.Add(entity);
-    await _db.SaveChangesAsync();
+    await _db.SaveChangesAsync(cancellationToken);
 
     return new GoalDto(
         entity.Id,
